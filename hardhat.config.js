@@ -49,6 +49,11 @@ module.exports = {
         // coinmarketcap: COINMARKETCAP_API_KEY,
     },
     mocha: {
-        timeout: 300000, // this is used when we are waiting for Promises
+        timeout: 1500000, // this is used when we are waiting for Promises
+    },
+    etherscan: {
+        apiKey: {
+            rinkeby: ETHERSCAN_API_KEY,
+        },
     },
 }

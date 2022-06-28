@@ -12,8 +12,7 @@ const { assert, expect } = require("chai")
 developmentChains.includes(network.name)
     ? describe.skip
     : describe("Raffle Staging Tests", () => {
-          let raffle, vrfCoordinatorV2Mock, raffleEntranceFee, deployer, interval
-          const chainId = network.config.chainId
+          let raffle, raffleEntranceFee, deployer
 
           beforeEach(async () => {
               deployer = (await getNamedAccounts()).deployer
@@ -27,11 +26,13 @@ developmentChains.includes(network.name)
                   const startingTimestamp = await raffle.getLastTimestamp()
                   const accounts = ethers.getSigners()
                   // set up a listener before we enter the raffle
+                  console.log("Setting up listener...")
                   await new Promise(async (resolve, reject) => {
+                      // setup listener before we enter the raffle
+                      // Just in case the blockchain moves REALLY fast
                       raffle.once("WinnerPicked", async () => {
-                          console.log("Winner Picked event fired!")
+                          console.log("WinnerPicked event fired!")
                           try {
-                              // asserts
                               const recentWinner = await raffle.getRecentWinner()
                               const raffleState = await raffle.getRaffleState()
                               const winnerEndingBalance = await accounts[0].getBalance()
@@ -41,20 +42,23 @@ developmentChains.includes(network.name)
                               assert.equal(recentWinner.toString(), accounts[0].address)
                               assert.equal(raffleState, 0)
                               assert.equal(
-                                  winnerEndingBalance,
+                                  winnerEndingBalance.toString(),
                                   winnerStartingBalance.add(raffleEntranceFee).toString()
                               )
                               assert(endingTimestamp > startingTimestamp)
                               resolve()
-                          } catch (e) {
-                              reject(e)
+                          } catch (error) {
+                              console.log(error)
+                              reject(error)
                           }
                       })
 
                       // after listener is set up, we enter the raffle
-                      await raffle.enterRaffle({ value: raffleEntranceFee })
-                      const winnerStartingBalance = accounts[0].getBalance()
-
+                      console.log("Entering raffle...")
+                      const tx = await raffle.enterRaffle({ value: raffleEntranceFee })
+                      await tx.wait(1)
+                      console.log("Ok, time to wait...")
+                      const winnerStartingBalance = await accounts[0].getBalance()
                       // This current block of code WONT complete until our listener has finished listening!
                   })
               })
